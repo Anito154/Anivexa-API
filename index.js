@@ -248,7 +248,8 @@ export default {
       const [, id, audio, ep] = m;
       return cachedWatch(
         `watch:senshi:${id}:${audio}:${ep}`,
-        () => senshiHandler.fetch(request)
+        () => senshiHandler.fetch(request),
+        SIGNED_STREAM_WATCH_TTL
       );
     }
 
