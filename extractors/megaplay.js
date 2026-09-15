@@ -103,14 +103,28 @@ function decryptMegaPlaySource(value, script) {
 }
 
 function getMegaPlaySigningKey(script) {
-  const entry = script.indexOf("const MZzE=");
-  if (entry < 0) return null;
+  const objectName = script.match(/\blet\s+([A-Za-z_$][\w$]*)\s*;\s*!\s*function\s*\(\)\s*\{/i)?.[1];
+  const entry = script.match(/\bconst\s+[A-Za-z_$][\w$]*\s*=\s*new URLSearchParams\b/);
+  if (!objectName || !entry) return null;
+
+  const encoderIndex = script.indexOf("new TextEncoder();return");
+  if (encoderIndex < 0) return null;
+
+  const keyVar = script
+    .slice(encoderIndex, encoderIndex + 1600)
+    .match(/new TextEncoder\(\);return[\s\S]{0,1200}?\]\(([A-Za-z_$][\w$]*)\),\{/i)?.[1];
+  if (!keyVar) return null;
+
+  const keyExpression = script.match(
+    new RegExp(`(?:const|let|var)\\s+${keyVar}\\s*=\\s*(${objectName}\\.[A-Za-z_$][\\w$]*\\(\\d+\\))`)
+  )?.[1];
+  if (!keyExpression) return null;
 
   try {
     const context = { console, decodeURI, encodeURI, Math, String, Array, Object, RegExp, Error, SyntaxError };
     context.globalThis = context;
     vm.runInNewContext(
-      `${script.slice(0, entry)};globalThis.__megaPlaySigningKey=jlkC.ncGy(39);`,
+      `${script.slice(0, entry.index)};globalThis.__megaPlaySigningKey=${keyExpression};`,
       context,
       { timeout: 5000 }
     );
@@ -173,7 +187,7 @@ export async function extractMegaPlayDetails(embedUrl, { fetchImpl = fetch, user
     try { return await fetchText(fetchImpl, url, { "User-Agent": userAgent, "Referer": pageUrl.href }); } catch { return null; }
   }));
   const script = scripts.find((value) => /getSources/i.test(value) && /AES-CBC/i.test(value));
-  const signingScript = scripts.find((value) => value.includes("const kQiC=") && value.includes("[a-f0-9]{32}"));
+  const signingScript = scripts.find((value) => value.includes("[a-f0-9]{32}") && value.includes("token="));
   if (!script) throw new Error(`MegaPlay client script not found: ${embedUrl}`);
   const { legacy, modern } = getMegaPlayRoutes(script);
   if (!legacy && !modern) throw new Error(`MegaPlay source routes not found: ${embedUrl}`);
