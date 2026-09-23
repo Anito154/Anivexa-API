@@ -2,6 +2,7 @@ import { getMedia } from "../core/anilist.js";
 import { extractBabaStreamDetails } from "../extractors/babastream.js";
 import { extractMegaPlayDetails } from "../extractors/megaplay.js";
 import { episodeMeta, expectedCount, json } from "../core/new-provider-utils.js";
+import { wreqFetch } from "../core/wreq.js";
 
 async function getMalId(anilistId, ctx) {
   const idMal = ctx?.media?.idMal ?? (await getMedia(anilistId)).idMal;
@@ -11,6 +12,8 @@ async function getMalId(anilistId, ctx) {
 
 const BASE = "https://2dhive.com";
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+const BABASTREAM_WREQ_BROWSER = process.env.BABASTREAM_WREQ_BROWSER || "chrome_149";
+const BABASTREAM_WREQ_OS = process.env.BABASTREAM_WREQ_OS || "windows";
 
 async function fetchPage(url) {
   const res = await fetch(url, { headers: { "User-Agent": UA } });
@@ -178,7 +181,16 @@ async function handleWatch(anilistId, audio, epNum) {
 
     const babaResults = await Promise.allSettled(babaStreams.map(async (server) => ({
       embed: server.slug,
-      source: await extractBabaStreamDetails(server.slug, { userAgent: UA, referer }),
+      source: await extractBabaStreamDetails(server.slug, {
+        fetchImpl: (url, options = {}) => wreqFetch(url, {
+          ...options,
+          session: "babastream",
+          browser: BABASTREAM_WREQ_BROWSER,
+          os: BABASTREAM_WREQ_OS,
+        }),
+        userAgent: UA,
+        referer,
+      }),
     })));
     for (const result of babaResults) {
       if (result.status !== "fulfilled" || !result.value.source?.url) continue;
