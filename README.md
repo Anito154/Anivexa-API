@@ -183,6 +183,8 @@ function unwrapFlixImageSegment(bodyBuffer) {
 
 The ReAnime provider has an internal provider-level `/proxy` handler, but the main API does not currently expose a public root `/proxy` route for it. If you need direct custom-player playback, use the returned `embed` URL or implement the manifest decode/proxy flow above.
 
+***Removed the ReAnime `/proxy` endpoint since it was unnecessary and did not handle the Flixcloud playback flow anyway.***
+
 </details>
 
 ---
