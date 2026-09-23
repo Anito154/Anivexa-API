@@ -122,6 +122,62 @@ async function fetchAndDecryptFlixManifest(manifestUrl, playlistKey) {
 
 `HD-1` commonly uses AES-keyed HLS playlists. `HD-2` commonly uses image-wrapped `.png`/`.webp` segment URLs, so a custom proxy/player may need to unwrap those segment bytes before playback.
 
+For HD-2 style image-wrapped segments, fetch the segment through your proxy, unwrap it, and return it as `video/mp2t`.
+
+```js
+const flixImageSegmentXorKey = Uint8Array.from([
+  157, 42, 241, 71, 179, 142, 92, 112,
+  166, 25, 228, 59, 216, 98, 15, 197
+]);
+
+function unwrapFlixImageSegment(bodyBuffer) {
+  const body = Buffer.isBuffer(bodyBuffer) ? bodyBuffer : Buffer.from(bodyBuffer);
+  let offset = 0;
+  let needsXor = false;
+
+  const isWebp =
+    body.length > 12 &&
+    body[0] === 0x52 &&
+    body[1] === 0x49 &&
+    body[2] === 0x46 &&
+    body[3] === 0x46 &&
+    body[8] === 0x57 &&
+    body[9] === 0x45 &&
+    body[10] === 0x42 &&
+    body[11] === 0x50;
+
+  const isPng =
+    body.length > 8 &&
+    body[0] === 0x89 &&
+    body[1] === 0x50 &&
+    body[2] === 0x4e &&
+    body[3] === 0x47 &&
+    body[4] === 0x0d &&
+    body[5] === 0x0a &&
+    body[6] === 0x1a &&
+    body[7] === 0x0a;
+
+  if (isWebp) {
+    offset = 12;
+    needsXor = body[offset] !== 0x47;
+  } else if (isPng) {
+    offset = 8;
+    needsXor = body[offset] !== 0x47;
+  }
+
+  if (!offset) return { body, unwrapped: false };
+
+  const out = Buffer.from(body.subarray(offset));
+  if (needsXor) {
+    for (let i = 0; i < out.length; i++) {
+      out[i] ^= flixImageSegmentXorKey[i % flixImageSegmentXorKey.length];
+    }
+  }
+
+  return { body: out, unwrapped: true };
+}
+```
+
 The ReAnime provider has an internal provider-level `/proxy` handler, but the main API does not currently expose a public root `/proxy` route for it. If you need direct custom-player playback, use the returned `embed` URL or implement the manifest decode/proxy flow above.
 
 </details>
