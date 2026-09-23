@@ -70,8 +70,10 @@ GET /stream/reanime/:id/sub|dub/:ep
 ```
 302 redirect directly to the HLS stream.
 
+## ReAnime / FlixCloud playback notes
+
 <details>
-<summary>ReAnime / FlixCloud playback notes</summary>
+<summary>Click to see playback/decryption guide</summary>
 
 ReAnime uses FlixCloud for some streams. The returned `url` can be a signed HLS master URL, but FlixCloud may return the manifest as a Base64 + XOR payload instead of plaintext `#EXTM3U`.
 
