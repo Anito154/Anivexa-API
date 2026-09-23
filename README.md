@@ -70,6 +70,7 @@ GET /stream/reanime/:id/sub|dub/:ep
 ```
 302 redirect directly to the HLS stream.
 
+<a id="reanime-flixcloud-playback"></a>
 ## ReAnime / FlixCloud playback notes
 
 <details>
