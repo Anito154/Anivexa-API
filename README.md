@@ -70,6 +70,62 @@ GET /stream/reanime/:id/sub|dub/:ep
 ```
 302 redirect directly to the HLS stream.
 
+<details>
+<summary>ReAnime / FlixCloud playback notes</summary>
+
+ReAnime uses FlixCloud for some streams. The returned `url` can be a signed HLS master URL, but FlixCloud may return the manifest as a Base64 + XOR payload instead of plaintext `#EXTM3U`.
+
+For those streams, use the returned `playlist_key` or `key` field to decode the master playlist and any child playlists before handing them to an HLS player.
+
+```js
+function decryptFlixManifest(bodyBuffer, playlistKey) {
+  const raw = Buffer.isBuffer(bodyBuffer) ? bodyBuffer : Buffer.from(bodyBuffer);
+  const trimmed = raw.toString("utf8").trim();
+
+  if (trimmed.startsWith("#EXTM3U")) return trimmed;
+
+  const key = Buffer.from(playlistKey, "base64");
+  let payload = Buffer.from(trimmed, "base64");
+  const out = Buffer.alloc(payload.length);
+
+  for (let i = 0; i < payload.length; i++) {
+    out[i] = payload[i] ^ key[i % key.length];
+  }
+
+  const text = out.toString("utf8").trim();
+  if (!text.startsWith("#EXTM3U")) throw new Error("FlixCloud manifest decrypt failed");
+  return text;
+}
+
+function getManifestUrls(m3u8Text) {
+  return m3u8Text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"));
+}
+
+async function fetchAndDecryptFlixManifest(manifestUrl, playlistKey) {
+  const res = await fetch(manifestUrl, {
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      "Referer": "https://flixcloud.cc/",
+      "Origin": "https://flixcloud.cc"
+    }
+  });
+
+  if (!res.ok) throw new Error(`manifest HTTP ${res.status}`);
+
+  const body = Buffer.from(await res.arrayBuffer());
+  return decryptFlixManifest(body, playlistKey);
+}
+```
+
+`HD-1` commonly uses AES-keyed HLS playlists. `HD-2` commonly uses image-wrapped `.png`/`.webp` segment URLs, so a custom proxy/player may need to unwrap those segment bytes before playback.
+
+The ReAnime provider has an internal provider-level `/proxy` handler, but the main API does not currently expose a public root `/proxy` route for it. If you need direct custom-player playback, use the returned `embed` URL or implement the manifest decode/proxy flow above.
+
+</details>
+
 ---
 
 ## Self-hosted

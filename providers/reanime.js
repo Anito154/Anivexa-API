@@ -254,6 +254,8 @@ async function handleWatch3(anilistId, audio, epNum, origin) {
     url: item.url,
     type: "hls",
     embed: source.dataLink,
+    key: item.key ?? null,
+    playlist_key: item.playlist_key ?? item.key ?? null,
     subtitles: item.subtitles ?? [],
     thumbnails_vtt: item.thumbnails_vtt ?? null,
     video_title: item.video_title ?? null,
