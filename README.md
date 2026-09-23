@@ -39,7 +39,6 @@ It's the backbone powering **[Anivexa](https://github.com/walterwhite-69/Anivexa
 | **AniDB App** | ✅ Active | Language-aware, AniDB ID backed |
 | **AniZone** | ✅ Active | HLS + subtitles, sub-only; year-based re-scoring prevents wrong-season matches |
 | **AniWaves** | ✅ Active | Direct HLS from Vidplay, MyCloud, and BYFMS; DATASV quality MP4 sources; embed fallbacks |
-| **2dhive** | ✅ Active | Uses MAL ID internally; AniList ID used everywhere else |
 | **Anibd** | ✅ Active | Uses Anilist ID internally; AniList ID used everywhere else |
 | **Kickassanime** | ✅ Active | Fuzzy search, medium library |
 | **AnimeDunya** | ✅ Active | HLS + subtitles, sub-only, MAL ID backed |
@@ -181,7 +180,7 @@ function unwrapFlixImageSegment(bodyBuffer) {
 }
 ```
 
-The ReAnime provider has an internal provider-level `/proxy` handler, but the main API does not currently expose a public root `/proxy` route for it. If you need direct custom-player playback, use the returned `embed` URL or implement the manifest decode/proxy flow above.
+The API does not expose a public ReAnime `/proxy` route. If you need direct custom-player playback, use the returned `embed` URL or implement the manifest decode/proxy flow above.
 
 ***Removed the ReAnime `/proxy` endpoint since it was unnecessary and did not handle the Flixcloud playback flow anyway.***
 
